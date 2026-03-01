@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <sys/syscall.h>
 
+#define ROTL(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
+
 void printKey(uint8_t *buf, int len)
 {
 	printf("key: ");
@@ -33,14 +35,12 @@ int fillKey(uint8_t *buf, int len)
 	return (0);
 }
 
-int fill32BitsBlock(uint8_t *key, uint8_t *nonce)
+void fill32BitsBlock(uint32_t *state, uint8_t *key, uint8_t *nonce)
 {
 	// Fill state[0-3] with constants
     // Fill state[4-11] with key bytes (convert to words)
     // Fill state[12] with counter
     // Fill state[13-15] with nonce bytes (convert to words)
-
-	uint32_t state[16];
 
 	state[0] = 0x61707865;  // "expa"
 	state[1] = 0x3320646e;  // "nd 3"
@@ -64,7 +64,29 @@ int fill32BitsBlock(uint8_t *key, uint8_t *nonce)
 	state[14] = nonce[4] | (nonce[5] << 8) | (nonce[6] << 16) | (nonce[7] << 24);
 	state[15] = nonce[8] | (nonce[9] << 8) | (nonce[10] << 16) | (nonce[11] << 24);
 	
-	return 0;
+}
+
+void quarterRound(uint32_t *state, int a, int b, int c, int d)
+{
+	state[a] += state[b];  state[d] ^= state[a];  state[d] = ROTL(state[d], 16);
+	state[c] += state[d];  state[b] ^= state[c];  state[b] = ROTL(state[b], 12);
+	state[a] += state[b];  state[d] ^= state[a];  state[d] = ROTL(state[d], 8);
+	state[c] += state[d];  state[b] ^= state[c];  state[b] = ROTL(state[b], 7);
+}
+
+void chacha20Rounds(uint32_t *state)
+{
+	for (int i = 0; i < 10; i++) {
+		quarterRound(state, 0, 4, 8, 12);
+		quarterRound(state, 1, 5, 9, 13);
+		quarterRound(state, 2, 6, 10, 14);
+		quarterRound(state, 3, 7, 11, 15);
+
+		quarterRound(state, 0, 5, 10, 15);
+		quarterRound(state, 1, 6, 11, 12);
+		quarterRound(state, 2, 7, 8, 13);
+		quarterRound(state, 3, 4, 9, 14);
+	}
 }
 
 int main(int argc, char **argv)
@@ -102,5 +124,21 @@ int main(int argc, char **argv)
 	printKey(key, 32);
 	printKey(nonce, 12);
 
+	int bytesTotal = 0;
+	uint8_t plainText[64];
+	uint8_t cipherText[64];
+
+	while (bytesTotal = read(fd, plainText, 64) > 0) {
+		uint32_t state[16];
+		fill32BitsBlock(state, key, nonce);
+		chacha20Rounds(state);
+
+		uint8_t *keystream = (uint8_t *)state;
+		for (int i = 0; i < bytesTotal; i++) {
+			cipherText[i] = plainText[i] ^ keystream[i];
+		}
+
+		//write to output file
+	}
 
 }
