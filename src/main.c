@@ -41,6 +41,8 @@ int encryptFile(int fd, int outputFd)
 
 	write(outputFd, key, 32);
 	write(outputFd, nonce, 12);
+
+	return (0);
 }
 
 int main(int argc, char **argv)
