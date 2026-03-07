@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <sys/syscall.h>
 
+#define STUB_SIZE 16384
+
 #define ROTL(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
 
 int fillKey(uint8_t *buf, int len);
