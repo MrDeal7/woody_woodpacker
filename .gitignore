@@ -1,0 +1,7 @@
+# Build outputs
+woody_woodpacker
+stub
+woody
+
+# Object files
+*.o

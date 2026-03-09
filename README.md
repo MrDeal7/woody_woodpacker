@@ -36,9 +36,9 @@ make
 
 | Target | Description |
 |--------|-------------|
-| `make` / `make all` | Compile and link → produces `./woody` |
+| `make` / `make all` | Compile and link → produces `./woody_woodpacker` and `./stub` |
 | `make clean` | Remove object files |
-| `make fclean` | Remove object files and the `woody` executable |
+| `make fclean` | Remove object files and all built executables |
 | `make re` | Full rebuild (`fclean` then `all`) |
 
 The build uses `-Wall -Wextra -Werror` — all warnings are treated as errors.
@@ -46,7 +46,7 @@ The build uses `-Wall -Wextra -Werror` — all warnings are treated as errors.
 ## Usage
 
 ```bash
-./woody <path-to-64-bit-elf>
+./woody_woodpacker <path-to-64-bit-elf>
 ```
 
 **Arguments**
@@ -59,10 +59,10 @@ The build uses `-Wall -Wextra -Werror` — all warnings are treated as errors.
 
 ```bash
 # Pack the included sample binary
-./woody resources/sample
+./woody_woodpacker resources/sample
 
 # Pack a system binary
-./woody /usr/bin/ls
+./woody_woodpacker /usr/bin/ls
 ```
 
 On success, the packed binary is written to `./woody` in the current directory and the generated key and nonce are printed to standard output:
@@ -72,6 +72,14 @@ On success, the packed binary is written to `./woody` in the current directory a
 key: <64 hex characters>   # 32-byte encryption key
 key: <24 hex characters>   # 12-byte nonce
 ```
+
+Run the packed binary directly:
+
+```bash
+./woody
+```
+
+The stub decrypts the payload at runtime, prints `....WOODY....` to stdout, then transparently executes the original binary.
 
 **Error messages**
 
@@ -84,10 +92,20 @@ key: <24 hex characters>   # 12-byte nonce
 
 ## How It Works
 
+### Packing (`woody_woodpacker`)
+
 1. **Validation** – The tool reads the first bytes of the input file and checks for the ELF magic (`\x7fELF`) and the 64-bit class flag.
 2. **Key generation** – A 32-byte key and 12-byte nonce are generated using `getrandom()`.
 3. **Encryption** – The binary is read in 64-byte blocks. For each block, a ChaCha20 keystream is generated and XORed with the plaintext.
-4. **Output** – The encrypted binary is written to `./woody`, followed by the 32-byte key and the 12-byte nonce.
+4. **Output** – The `stub` executable is written first, followed by the encrypted payload, followed by the 32-byte key and the 12-byte nonce. The resulting file is saved as `./woody`.
+
+### Runtime unpacking (`woody`)
+
+When `./woody` is executed, the embedded stub runs automatically:
+
+1. **Self-read** – The stub opens `/proc/self/exe` and reads the key (bytes `[-44:-12]`) and nonce (last 12 bytes) from its own file.
+2. **Decryption** – The encrypted payload (everything after `STUB_SIZE` bytes and before the key/nonce) is decrypted in 64-byte blocks using the same ChaCha20 keystream.
+3. **In-memory execution** – The decrypted binary is written to an anonymous in-memory file via `memfd_create`, then executed with `execve` — the original binary never touches disk.
 
 ### ChaCha20 Implementation
 
@@ -105,7 +123,7 @@ woody_woodpacker/
 │   ├── main.c              # Entry point – packing logic
 │   ├── chacha20.c          # ChaCha20 cipher implementation
 │   ├── woody_woodpacker.h  # Shared definitions and prototypes
-│   └── stub.c              # Runtime decryption stub (work in progress)
+│   └── stub.c              # Runtime decryption stub
 └── resources/
     ├── sample.c            # Sample source for testing
     ├── sample              # Compiled sample ELF binary
@@ -120,6 +138,4 @@ woody_woodpacker/
 | ChaCha20 encryption | ✅ Complete |
 | Key/nonce generation | ✅ Complete |
 | Packed output creation | ✅ Complete |
-| Runtime unpacker stub | 🚧 Work in progress |
-
-The runtime stub (`src/stub.c`) can open the packed binary and decrypt its contents but does not yet jump to and execute the unpacked code.
+| Runtime unpacker stub | ✅ Complete |
