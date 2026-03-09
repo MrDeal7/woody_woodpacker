@@ -30,7 +30,13 @@ int main(void)
 	uint8_t cipherText[64];
 	int k = 0;
 	printf("....WOODY....\n");
-	while ((bytesR = read(fd, cipherText, 64)) > 0 && k < encryptedSize) {
+	while (k < encryptedSize) {
+		size_t toRead = 64;
+		if ((off_t)toRead > encryptedSize - k)
+			toRead = (size_t)(encryptedSize - k);
+		bytesR = read(fd, cipherText, toRead);
+		if (bytesR <= 0)
+			break;
 		uint32_t state[16];
 		fill32BitsBlock(state, key, nonce);
 		chacha20Rounds(state);

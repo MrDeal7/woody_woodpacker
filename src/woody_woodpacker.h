@@ -18,7 +18,7 @@
 #define SYS_memfd_create 319
 #endif
 
-#define STUB_SIZE 16384
+#define STUB_SIZE 16752
 
 #define ROTL(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
 

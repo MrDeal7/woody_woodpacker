@@ -69,12 +69,31 @@ int main(int argc, char **argv)
 	
 	lseek(fd, 0, SEEK_SET);
 
-	int outputFd = open("woody", O_CREAT | O_WRONLY | O_TRUNC, 0644);
+	int stubFd = open("stub", O_RDONLY);
+	if (stubFd < 0) {
+		printf("Can't open stub\n");
+		close(fd);
+		return (1);
+	}
+
+	int outputFd = open("woody", O_CREAT | O_WRONLY | O_TRUNC, 0755);
 	if (outputFd < 0) {
 		printf("Error while creating output file\n");
+		close(stubFd);
+		close(fd);
 		return(1);
 	}
+
+	uint8_t stubBuffer[4096];
+	ssize_t stubBytes;
+	while ((stubBytes = read(stubFd, stubBuffer, sizeof(stubBuffer))) > 0) {
+		write(outputFd, stubBuffer, stubBytes);
+	}
+	close(stubFd);
+
 	if (encryptFile(fd, outputFd) != 0) {
+		close(outputFd);
+		close(fd);
 		return (1);
 	}
 
