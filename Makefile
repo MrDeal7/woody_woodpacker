@@ -35,7 +35,7 @@ clean:
 	@rm -f $(OBJ) $(STUB_OBJ)
 
 fclean: clean
-	@rm -f $(NAME) $(STUB)
+	@rm -f $(NAME) $(STUB) woody stub
 
 re: fclean all
 

@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 	uint8_t stubBuffer[4096];
 	ssize_t stubBytes;
 	while ((stubBytes = read(stubFd, stubBuffer, sizeof(stubBuffer))) > 0) {
-		write(outputFd, stubBuffer, stubBytes);
+		write(outputFd, stubBuffer, stubBytes); // write stub in woody
 	}
 	close(stubFd);
 
