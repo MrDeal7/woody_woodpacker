@@ -8,6 +8,15 @@
 #include <stdint.h>
 #include <errno.h>
 #include <sys/syscall.h>
+#include <sys/mman.h>
+
+#ifndef MFD_CLOEXEC
+#define MFD_CLOEXEC 0x0001U
+#endif
+
+#ifndef SYS_memfd_create
+#define SYS_memfd_create 319
+#endif
 
 #define STUB_SIZE 16384
 

