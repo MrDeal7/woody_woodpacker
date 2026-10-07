@@ -2,11 +2,10 @@ NAME = woody_woodpacker
 STUB = stub
 
 CC = cc
-
-CFLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror 
 
 SRC = $(addprefix ./src/, $(SOURCES))
-SOURCES = main.c chacha20.c
+SOURCES = main.c chacha20.c dummy.c
 
 STUB_SRC = $(addprefix ./src/, $(STUB_SOURCES))
 STUB_SOURCES = stub.c chacha20.c

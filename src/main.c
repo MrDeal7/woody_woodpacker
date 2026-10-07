@@ -9,7 +9,9 @@ void printKey(uint8_t *buf, int len)
 	printf("\n");
 }
 
-int encryptFile(int fd, int outputFd)
+
+
+int encryptFile(int fd, int outputFd, size_t stubSize)
 {
 	uint8_t key[32];
 	uint8_t nonce[12];
@@ -34,15 +36,41 @@ int encryptFile(int fd, int outputFd)
 		uint8_t *keystream = (uint8_t *)state;
 		for (int i = 0; i < bytesTotal; i++) {
 			cipherText[i] = plainText[i] ^ keystream[i];
+			cipherText[i] = plainText[i];
 		}
 
 		write(outputFd, cipherText, bytesTotal);
 	}
-
+	off_t stubSizeValue = (off_t)stubSize;
+	write(outputFd, &stubSizeValue, sizeof(stubSizeValue));
 	write(outputFd, key, 32);
 	write(outputFd, nonce, 12);
 
 	return (0);
+}
+
+// Verifies if the file is valid and a 64-bit ELF returns the opened file fd on sucess and -1 on failure
+
+int is_valid64bitELF(char *file_name)
+{
+	int fd = open(file_name, O_RDONLY);
+	if (fd < 0) {
+		printf("Can't open file\n");
+		return(-1);
+	}
+
+	char header[20];
+	read(fd, header, 20);
+	if (header[0] == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F' && header[4] == 2)
+	{
+		lseek(fd, 0, SEEK_SET);
+		return(fd);
+	}
+	else {
+		printf("Wrong type of file\n");
+		close(fd);
+		return(-1);
+	}
 }
 
 int main(int argc, char **argv)
@@ -52,22 +80,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	int fd = open(argv[1], O_RDONLY);
-	if (fd < 0) {
-		printf("Can't open file\n");
+	int fd = is_valid64bitELF(argv[1]);
+	if(fd < 0)
 		exit(1);
-	}
-
-	char header[20];
-	read(fd, header, 20);
-	if (header[0] == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F' && header[4] == 2)
-		printf("64-bit ELF\n");
-	else {
-		printf("Wront type of file\n");
-		exit(1);
-	}
-	
-	lseek(fd, 0, SEEK_SET);
+	printf("64-bit ELF\n");
 
 	int stubFd = open("stub", O_RDONLY);
 	if (stubFd < 0) {
@@ -86,12 +102,14 @@ int main(int argc, char **argv)
 
 	uint8_t stubBuffer[4096];
 	ssize_t stubBytes;
+	size_t stubSize = 0;
 	while ((stubBytes = read(stubFd, stubBuffer, sizeof(stubBuffer))) > 0) {
 		write(outputFd, stubBuffer, stubBytes); // write stub in woody
+		stubSize += stubBytes;
 	}
 	close(stubFd);
 
-	if (encryptFile(fd, outputFd) != 0) {
+	if (encryptFile(fd, outputFd, stubSize) != 0) {
 		close(outputFd);
 		close(fd);
 		return (1);

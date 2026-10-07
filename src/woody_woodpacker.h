@@ -18,12 +18,17 @@
 #define SYS_memfd_create 319
 #endif
 
-#define STUB_SIZE 16752
+
+#define KEY_SIZE 32 
+#define NONCE_SIZE 12
+#define STUBSIZE_SIZE sizeof(off_t)
+#define FOOT_SIZE (KEY_SIZE + NONCE_SIZE + STUBSIZE_SIZE)
 
 #define ROTL(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
 
 int fillKey(uint8_t *buf, int len);
 void fill32BitsBlock(uint32_t *state, uint8_t *key, uint8_t *nonce);
 void chacha20Rounds(uint32_t *state);
+int dummy_encrypt(int fd, int outputFd);
 
 #endif
