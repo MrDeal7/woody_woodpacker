@@ -5,10 +5,10 @@ CC = cc
 CFLAGS = -Wall -Wextra -Werror 
 
 SRC = $(addprefix ./src/, $(SOURCES))
-SOURCES = main.c chacha20.c dummy.c
+SOURCES = main.c chacha20.c dummy.c data_functions.c compress.c encrypt.c
 
 STUB_SRC = $(addprefix ./src/, $(STUB_SOURCES))
-STUB_SOURCES = stub.c chacha20.c
+STUB_SOURCES = stub.c chacha20.c data_functions.c compress.c encrypt.c
 
 OBJ = $(SRC:.c=.o)
 STUB_OBJ = $(STUB_SRC:.c=.o)
@@ -23,7 +23,7 @@ $(NAME): $(OBJ)
 	@echo "woody_woodpacker built"
 
 $(STUB): $(STUB_OBJ)
-	@$(CC) $(CFLAGS) -o $@ $(STUB_OBJ)
+	@$(CC) $(CFLAGS) -o ./resources/$@ $(STUB_OBJ)
 	@echo "stub built"
 
 woody: $(NAME)

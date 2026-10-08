@@ -1,53 +1,5 @@
 #include "woody_woodpacker.h"
 
-void printKey(uint8_t *buf, int len)
-{
-	printf("key: ");
-	for (int i = 0; i < len; i++) {
-		printf("%02x", buf[i]);
-	}
-	printf("\n");
-}
-
-
-
-int encryptFile(int fd, int outputFd, size_t stubSize)
-{
-	uint8_t key[32];
-	uint8_t nonce[12];
-	if (fillKey(key, 32) < 0) {
-		return (1);
-	}
-	if (fillKey(nonce, 12) < 0) {
-		return (1);
-	}
-	printKey(key, 32);
-	printKey(nonce, 12);
-
-	int bytesTotal = 0;
-	uint8_t plainText[64];
-	uint8_t cipherText[64];
-
-	while ((bytesTotal = read(fd, plainText, 64)) > 0) {
-		uint32_t state[16];
-		fill32BitsBlock(state, key, nonce);
-		chacha20Rounds(state);
-
-		uint8_t *keystream = (uint8_t *)state;
-		for (int i = 0; i < bytesTotal; i++) {
-			cipherText[i] = plainText[i] ^ keystream[i];
-			cipherText[i] = plainText[i];
-		}
-
-		write(outputFd, cipherText, bytesTotal);
-	}
-	off_t stubSizeValue = (off_t)stubSize;
-	write(outputFd, &stubSizeValue, sizeof(stubSizeValue));
-	write(outputFd, key, 32);
-	write(outputFd, nonce, 12);
-
-	return (0);
-}
 
 // Verifies if the file is valid and a 64-bit ELF returns the opened file fd on sucess and -1 on failure
 
@@ -85,7 +37,7 @@ int main(int argc, char **argv)
 		exit(1);
 	printf("64-bit ELF\n");
 
-	int stubFd = open("stub", O_RDONLY);
+	int stubFd = open("./resources/stub", O_RDONLY);
 	if (stubFd < 0) {
 		printf("Can't open stub\n");
 		close(fd);
@@ -117,5 +69,6 @@ int main(int argc, char **argv)
 
 	close(outputFd);
 	close(fd);
+	return (0);
 
 }

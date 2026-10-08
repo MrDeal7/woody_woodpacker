@@ -26,9 +26,20 @@
 
 #define ROTL(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
 
+typedef struct s_data {
+	uint8_t key[32];
+	uint8_t nonce[12];
+	off_t size;
+	off_t encryptedSize;
+	off_t stubSize;
+}t_data;
+
 int fillKey(uint8_t *buf, int len);
 void fill32BitsBlock(uint32_t *state, uint8_t *key, uint8_t *nonce);
 void chacha20Rounds(uint32_t *state);
 int dummy_encrypt(int fd, int outputFd);
+int encryptFile(int fd, int outputFd, size_t stubSize);
+void printData(int outputFd, t_data data);
+t_data getData(int fd);
 
 #endif
