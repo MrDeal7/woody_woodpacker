@@ -62,7 +62,7 @@ int encryptFile(int fd, int outputFd, size_t stubSize)
 	}
     if(k != 0)
     {
-        write(outputFd, cipherText, (k - 1) * 64 + bytesTotal);
+        write(outputFd, cipherText, k * 64);
     }
 	
 	data.stubSize = (off_t)stubSize;
